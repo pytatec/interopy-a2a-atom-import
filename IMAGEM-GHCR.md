@@ -21,15 +21,18 @@ O PHP publicou em 21/10/2026 duas falhas críticas de execução remota (CVE-202
 
 ## Usar nos compose
 
-O padrão continua sendo a imagem local (`atom-import:<data>`, construída no host). Para usar a do GHCR, nas variáveis da stack `atom-saida`:
+Nos compose do repositório `interopy-a2a-deploy`, o serviço `atom-import` escolhe a imagem por variáveis da stack:
 
-```
-ATOM_IMPORT_IMAGE=ghcr.io/pytatec/interopy-a2a-atom-import
-ATOM_IMPORT_VERSION=v1.0.0
-ATOM_IMPORT_PULL_POLICY=missing
-```
+| stack | padrão | variáveis |
+|---|---|---|
+| `ufsm-atom/saida` (UFSM) | **imagem do GHCR** | `ATOM_IMPORT_VERSION=v1.0.0` (a tag `vX.Y.Z` do repositório do atom-import) |
+| `atom-am-36/saida` (laboratório `.36`) | imagem local, construída no host (`atom-import:<data>`) | para usar o GHCR: `ATOM_IMPORT_IMAGE=ghcr.io/pytatec/interopy-a2a-atom-import`, `ATOM_IMPORT_VERSION=vX.Y.Z` e `ATOM_IMPORT_PULL_POLICY=missing` |
 
-Isso vale para as stacks de saída do repositório `interopy-a2a-deploy` (`ufsm-atom/saida` e `atom-am-36/saida`). Sem essas variáveis, nada muda. Os pacotes são privados: o servidor precisa de `docker login ghcr.io` com um token `read:packages`. Depois de trocar a versão, confira com `docker exec <contêiner-do-import> php -v | head -1`.
+Na UFSM, para voltar a uma imagem construída no host: `ATOM_IMPORT_IMAGE=atom-import`, `ATOM_IMPORT_VERSION=<data>` e `ATOM_IMPORT_PULL_POLICY=never`.
+
+**Ao migrar uma stack que já roda com uma imagem local**, troque `ATOM_IMPORT_VERSION` (por exemplo `20261020`) para a tag do GHCR (`v1.0.0`) **ao mesmo tempo** que atualiza o compose. Se o compose novo for aplicado com a versão antiga, o Compose tenta baixar `ghcr.io/pytatec/interopy-a2a-atom-import:20261020`, que não existe, e o import não sobe.
+
+Os pacotes são privados: o servidor precisa de `docker login ghcr.io` com um token `read:packages`. Depois de trocar a versão, confira com `docker exec <contêiner-do-import> php -v | head -1` (deve mostrar PHP 8.3.36 ou mais novo).
 
 ## Testar o build localmente
 
