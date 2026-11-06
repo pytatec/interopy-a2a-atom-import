@@ -1,0 +1,84 @@
+name: imagem
+
+# Constrói a imagem do atom-import (carga periódica de ISAD(G) no AtoM) e publica no GitHub Container Registry:
+#   ghcr.io/pytatec/interopy-a2a-atom-import:<tag>
+# Dispara SOMENTE quando uma tag vX.Y.Z é enviada ao GitHub:
+#   git tag v1.0.0 && git push origin v1.0.0
+# A versão deste componente é independente da do backend e da do frontend do A2A. Tag que já existe no
+# registro NUNCA é sobrescrita. O Dockerfile recusa uma base de PHP abaixo de 8.3.36 (falha crítica de
+# 21/10/2026): build com PHP vulnerável quebra em vez de ser publicado. Ver IMAGEM-GHCR.md.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: imagem-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  imagem:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validar a tag e montar o nome da imagem
+        id: v
+        env:
+          VERSAO: ${{ github.ref_name }}
+          DONO: ${{ github.repository_owner }}
+        run: |
+          if ! [[ "$VERSAO" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]]; then
+            echo "erro: tag '$VERSAO' fora do formato vX.Y.Z (ou vX.Y.Z-rc.1)" >&2; exit 1
+          fi
+          echo "versao=$VERSAO" >> "$GITHUB_OUTPUT"
+          echo "imagem=ghcr.io/${DONO,,}/interopy-a2a-atom-import" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Recusar versão que já existe no registro
+        env:
+          IMAGEM: ${{ steps.v.outputs.imagem }}
+          VERSAO: ${{ steps.v.outputs.versao }}
+        run: |
+          if docker buildx imagetools inspect "$IMAGEM:$VERSAO" >/dev/null 2>&1; then
+            echo "erro: $IMAGEM:$VERSAO já existe. Publique uma versão nova; tags não são sobrescritas." >&2
+            exit 1
+          fi
+
+      - name: Construir e publicar
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.v.outputs.imagem }}:${{ steps.v.outputs.versao }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.v.outputs.versao }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Resumo (com a versão do PHP da imagem publicada)
+        env:
+          IMAGEM: ${{ steps.v.outputs.imagem }}
+          VERSAO: ${{ steps.v.outputs.versao }}
+        run: |
+          PHP=$(docker run --rm --entrypoint php "$IMAGEM:$VERSAO" -v | head -1)
+          {
+            echo "\`$IMAGEM:$VERSAO\` (commit \`${GITHUB_SHA}\`)"
+            echo ""
+            echo "$PHP"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$PHP"

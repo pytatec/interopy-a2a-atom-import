@@ -1,0 +1,74 @@
+---
+# ============================================================================
+# STACK PORTAINER — ATOM-IMPORT HOMOLOGAÇÃO
+# Nome da stack no Portainer: atom-import-hom
+#
+# Roda na MESMA VM da stack atom-hom. Imagem própria e independente (PHP CLI + Python)
+# que compartilha com o AtoM: código (/opt/atom), config, uploads, rede
+# (atom-hom → MySQL/Elasticsearch/Gearman) e o diretório /mnt/integracao onde o
+# rsync_server recebe os CSVs ISAD enviados pelo backend-jobs.
+# Para prod/teste: trocar "-hom"/"_hom" (nome, container_name, rede, volumes).
+#
+# Portainer → Stacks → Add stack → Repository:
+#   Compose path: docker-compose.yml  (contexto de build = a raiz deste repositório)
+#   Environment variables: ATOM_MYSQL_*, ATOM_API_BASE_URL, ATOM_API_KEY (demais opcionais).
+# ============================================================================
+name: atom-import-hom
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "100m"
+    max-file: "5"
+
+services:
+  atom_import:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "${PHP_VERSION:-8.3}"
+    image: "atom-import:${ATOM_IMPORT_TAG:-latest}"
+    container_name: "atom-import-hom"
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    environment:
+      # --- Consumidas pelo `php symfony` (conexão com o AtoM) ---
+      ATOM_MYSQL_DSN: ${ATOM_MYSQL_DSN}
+      ATOM_MYSQL_USERNAME: ${ATOM_MYSQL_USERNAME}
+      ATOM_MYSQL_PASSWORD: ${ATOM_MYSQL_PASSWORD}
+      ATOM_ELASTICSEARCH_HOST: ${ATOM_ELASTICSEARCH_HOST:-elasticsearch}
+      # --- atom_import.py (demais opções têm padrão no script; ver .env.example) ---
+      ATOM_ROOT: /atom/src
+      # INCOMING_DIR = ATOM_RSYNC_PATH do backend-jobs (rsync_server vê como /data/atom-import/incoming).
+      INCOMING_DIR: /integracao/atom-import/incoming
+      WORK_DIR: /integracao/atom-import/work
+      ERROR_DIR: /integracao/atom-import/error
+      RETRY_DIR: /integracao/atom-import/retry
+      LOG_FILE: /integracao/atom-import/log/atom-import.log
+      LOCK_FILE: /integracao/atom-import/.lock
+      ATOM_API_BASE_URL: ${ATOM_API_BASE_URL:-}
+      ATOM_API_KEY: ${ATOM_API_KEY:-}
+      INTERVAL_SECONDS: ${INTERVAL_SECONDS:-600}
+      TZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      # Código do AtoM (symfony) e dependências PHP (autoload do composer).
+      - "/opt/atom:/atom/src:rw"
+      - "composer_deps_hom:/atom/src/vendor/composer"
+      # Config do AtoM.
+      - "/mnt/atom/config:/usr/share/nginx/atom/config"
+      # Área de integração: incoming (rsync), work, retry, error e log em /mnt/integracao/atom-import.
+      - "/mnt/integracao:/integracao"
+    networks:
+      - default
+
+volumes:
+  composer_deps_hom:
+    external: true
+    name: composer_deps_hom
+
+networks:
+  default:
+    # Rede da stack atom-hom (external: acessa percona/elasticsearch/gearmand/memcached por nome).
+    external: true
+    name: atom-hom

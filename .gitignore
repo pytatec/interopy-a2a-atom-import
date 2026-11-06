@@ -1,0 +1,6 @@
+# configuração e segredos de uma instalação: só o .env.example é versionado
+.env
+
+# bytecode do Python
+__pycache__/
+*.pyc
