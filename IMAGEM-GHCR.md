@@ -26,6 +26,7 @@ Nos compose do repositório `interopy-a2a-deploy`, o serviço `atom-import` esco
 | stack | padrão | variáveis |
 |---|---|---|
 | `ufsm-atom/saida` (UFSM) | **imagem do GHCR** | `ATOM_IMPORT_VERSION=v1.0.0` (a tag `vX.Y.Z` do repositório do atom-import) |
+| `docker-compose.yml` deste repositório (stack avulsa `atom-import-hom`) | **imagem do GHCR** | `ATOM_IMPORT_VERSION=vX.Y.Z` (obrigatória). Para construir localmente: `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build` |
 | `atom-am-36/saida` (laboratório `.36`) | imagem local, construída no host (`atom-import:<data>`) | para usar o GHCR: `ATOM_IMPORT_IMAGE=ghcr.io/pytatec/interopy-a2a-atom-import`, `ATOM_IMPORT_VERSION=vX.Y.Z` e `ATOM_IMPORT_PULL_POLICY=missing` |
 
 Na UFSM, para voltar a uma imagem construída no host: `ATOM_IMPORT_IMAGE=atom-import`, `ATOM_IMPORT_VERSION=<data>` e `ATOM_IMPORT_PULL_POLICY=never`.

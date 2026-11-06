@@ -112,7 +112,7 @@ Referência: https://www.accesstomemory.org/pt-br/docs/2.10/admin-manual/mainten
 ## No ambiente do pacote `atom-am-36` (192.168.100.36)
 
 Aqui o `atom-import` **não** é uma stack à parte: é o serviço `atom-import` da stack `saida` de `interopy-a2a-deploy/atom-am-36`
-(contêiner `a2a-atom-import`). A imagem é construída a partir desta pasta (`docker build -t atom-import:<data> interopy-a2a-atom-import`),
+(contêiner `a2a-atom-import`). A imagem vem do GHCR (`ghcr.io/pytatec/interopy-a2a-atom-import`, ver `IMAGEM-GHCR.md`; para construir no host, `docker build -t atom-import:<data> interopy-a2a-atom-import`),
 `ATOM_IMPORT_VERSION` entra no `saida/.env`, e o serviço reaproveita do AtoM de saída o código, o banco, o índice, o cache e a pasta de
 integração (`/data` = `INTEGRACAO_DIR`; `INCOMING_DIR=/data/atom-import/incoming` = `ATOM_RSYNC_PATH` do A2A). O entrypoint grava o
 `date.timezone` do PHP CLI a partir de `ATOM_PHP_DATE_TIMEZONE`. Detalhes e passos em `interopy-a2a-deploy/atom-am-36/LEIA-ME.md`.
@@ -122,7 +122,7 @@ O modelo abaixo (stack `atom-import-hom` na rede `atom-hom`) vale para o ambient
 
 ## Implantação com Docker / Portainer (stack `atom-import-hom`)
 
-Arquivos: `Dockerfile`, `entrypoint.sh`, `docker-compose.yml`.
+Arquivos: `Dockerfile`, `entrypoint.sh`, `docker-compose.yml` (imagem do GHCR) e `docker-compose.build.yml` (para construir localmente).
 
 - Roda **na mesma VM** da stack `atom-hom`. A imagem é **independente** (`php:8.3-cli` + extensões do AtoM + Python 3,
   sem depender de `atom-worker`; o código do AtoM vem do volume `/opt/atom`) e executa o `atom_import.py` em loop a
@@ -135,6 +135,8 @@ Arquivos: `Dockerfile`, `entrypoint.sh`, `docker-compose.yml`.
   `/data/atom-import/incoming` (ou ajuste `INCOMING_DIR` no compose). `work/`, `retry/`, `error/` e o log
   ficam em `/mnt/integracao/atom-import/`.
 - **Portainer:** Stacks → Add stack → Repository, compose path `docker-compose.yml`;
-  cadastre as variáveis (ver `.env.example`): `ATOM_MYSQL_DSN/USERNAME/PASSWORD` (iguais às da stack
-  atom-hom), `ATOM_API_BASE_URL`, `ATOM_API_KEY`. A stack `atom-hom` precisa estar de pé (rede criada).
+  cadastre as variáveis (ver `.env.example`): `ATOM_IMPORT_VERSION` (tag do GHCR, ex.: `v1.0.0`; obrigatória),
+  `ATOM_MYSQL_DSN/USERNAME/PASSWORD` (iguais às da stack atom-hom), `ATOM_API_BASE_URL`, `ATOM_API_KEY`. A stack
+  `atom-hom` precisa estar de pé (rede criada) e o servidor precisa de `docker login ghcr.io` (token `read:packages`).
+  Para construir a imagem em vez de baixá-la: `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.
 - Teste único: `docker exec atom-import-hom /opt/atom-import/entrypoint.sh once`. Logs: aba *Logs*.

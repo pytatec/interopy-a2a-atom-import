@@ -1,0 +1,15 @@
+# Sobreposição para CONSTRUIR a imagem do atom-import localmente, em vez de baixá-la do GHCR.
+# Use junto com o docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+#
+# O pull_policy "build" faz o Compose construir mesmo que a tag exista no registro (sem ele, com "build" e "image"
+# juntos, o Compose pode baixar ou construir e etiquetar como ghcr.io/... uma imagem que não saiu do GHCR).
+# Para não confundir com a imagem publicada, dê um nome local: ATOM_IMPORT_IMAGE=atom-import e ATOM_IMPORT_VERSION=local.
+services:
+  atom_import:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "${PHP_VERSION:-8.3}"
+    pull_policy: build

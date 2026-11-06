@@ -10,7 +10,7 @@
 # Para prod/teste: trocar "-hom"/"_hom" (nome, container_name, rede, volumes).
 #
 # Portainer → Stacks → Add stack → Repository:
-#   Compose path: docker-compose.yml  (contexto de build = a raiz deste repositório)
+#   Compose path: docker-compose.yml  (a imagem vem do GHCR: defina ATOM_IMPORT_VERSION, ex.: v1.0.0)
 #   Environment variables: ATOM_MYSQL_*, ATOM_API_BASE_URL, ATOM_API_KEY (demais opcionais).
 # ============================================================================
 name: atom-import-hom
@@ -23,11 +23,10 @@ x-logging: &default-logging
 
 services:
   atom_import:
-    build:
-      context: .
-      args:
-        PHP_VERSION: "${PHP_VERSION:-8.3}"
-    image: "atom-import:${ATOM_IMPORT_TAG:-latest}"
+    # Imagem publicada no GHCR a cada tag vX.Y.Z deste repositório (IMAGEM-GHCR.md). Exige `docker login ghcr.io`
+    # no servidor (token read:packages). Para CONSTRUIR localmente em vez de baixar, some docker-compose.build.yml.
+    image: "${ATOM_IMPORT_IMAGE:-ghcr.io/pytatec/interopy-a2a-atom-import}:${ATOM_IMPORT_VERSION:?defina ATOM_IMPORT_VERSION (a tag vX.Y.Z do GHCR, ex.: v1.0.0)}"
+    pull_policy: ${ATOM_IMPORT_PULL_POLICY:-missing}
     container_name: "atom-import-hom"
     restart: unless-stopped
     init: true
