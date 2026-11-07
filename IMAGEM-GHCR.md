@@ -2,6 +2,13 @@
 
 `ghcr.io/pytatec/interopy-a2a-atom-import:<versão>`: PHP CLI com as extensões do AtoM e Python 3, que aplica o ISAD(G) (`*_isad.csv` enviados pelo backend do A2A por rsync) nas descrições que o DIP do Archivematica criou, com `php symfony csv:import --update=match-and-update`. O código do AtoM e a configuração são montados em tempo de execução, então a imagem não leva segredo nem host.
 
+> **v2.0.0 (base mudou):** a imagem agora é construída **sobre a imagem do AtoM** (`ghcr.io/pytatec/interopy-a2a-atom`), escolhida por
+> `--build-arg ATOM_IMAGE=ghcr.io/pytatec/interopy-a2a-atom:vX.Y.Z`. O código do AtoM vem dentro dela (nada de árvore montada), e a
+> trava de versão do PHP descrita abaixo passa a viver no Dockerfile do AtoM. Para construir é preciso ter acesso de leitura ao pacote
+> `interopy-a2a-atom` (`docker login ghcr.io`; no GitHub Actions, dar acesso ao repositório nas configurações do pacote). A versão
+> independente é o `Dockerfile.legado` (tags `v1.x`). Ao subir o AtoM para uma versão nova, publique um atom-import novo com
+> `ATOM_IMAGE` apontando para ela.
+
 ## Publicar uma versão
 
 O GitHub Actions (`.github/workflows/imagem.yml`) constrói e publica a imagem **somente quando uma tag é enviada**:

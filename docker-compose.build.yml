@@ -11,5 +11,5 @@ services:
     build:
       context: .
       args:
-        PHP_VERSION: "${PHP_VERSION:-8.3}"
+        ATOM_IMAGE: "${ATOM_IMAGE:-ghcr.io/pytatec/interopy-a2a-atom:v1.0.0}"
     pull_policy: build

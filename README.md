@@ -124,9 +124,10 @@ O modelo abaixo (stack `atom-import-hom` na rede `atom-hom`) vale para o ambient
 
 Arquivos: `Dockerfile`, `entrypoint.sh`, `docker-compose.yml` (imagem do GHCR) e `docker-compose.build.yml` (para construir localmente).
 
-- Roda **na mesma VM** da stack `atom-hom`. A imagem é **independente** (`php:8.3-cli` + extensões do AtoM + Python 3,
-  sem depender de `atom-worker`; o código do AtoM vem do volume `/opt/atom`) e executa o `atom_import.py` em loop a
-  cada `INTERVAL_SECONDS` (substitui o cron; o `flock` evita sobreposição).
+- Roda **na mesma VM** da stack `atom-hom`. **A partir da v2.0.0** a imagem parte da imagem do AtoM do Interopy
+  (`interopy-a2a-atom`: o código do AtoM, o PHP e o `symfony` estão dentro dela, sem árvore `/opt/atom` no host) e executa o
+  `atom_import.py` em loop a cada `INTERVAL_SECONDS` (substitui o cron; o `flock` evita sobreposição). A versão independente
+  (`php:8.3-cli` com a árvore do AtoM montada do host) é o `Dockerfile.legado` e as tags `v1.x`.
 - Entra na rede externa `atom-hom` (acessa `percona`, `elasticsearch`, `gearmand`, `memcached`) e
   usa os mesmos volumes/variáveis `ATOM_*` do `atom_worker`; `ATOM_ROOT` = `/atom/src`
   (confirme onde está o arquivo `symfony` no host: `ls /opt/atom/symfony`).
